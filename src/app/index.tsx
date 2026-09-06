@@ -1,17 +1,34 @@
-import { StyleSheet, Text, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AddTaskSheet } from "@/components/AddTaskSheet";
+import { TaskCard } from "@/components/TaskCard";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { editTask, loadTasks } from "@/store/tasks";
+import { dailyQuote } from "@/data/quotes";
+import { nextDefaultMilestone, nextHoliday } from "@/services/calendar/schoolCalendar";
+import { SchoolMilestonePrompt } from "@/components/SchoolMilestonePrompt";
+import { saveSchoolMilestone } from "@/services/calendar/schoolMilestone";
+
+function dayStart(date: Date) { const value = new Date(date); value.setHours(0, 0, 0, 0); return value.getTime(); }
+function greeting(hour: number) { return hour < 11 ? "早安 ☀️" : hour < 14 ? "午安 🌿" : "晚安 🌙"; }
 
 export default function Index() {
-  return (
-    <View style={styles.container}>
-      <Text>Big Fat Fish is 李子微</Text>
-    </View>
-  );
+  const dispatch = useAppDispatch();
+  const app = useAppSelector((state) => state.app);
+  const tasks = useAppSelector((state) => state.tasks.items);
+  const [tab, setTab] = useState<"home" | "calendar">("home"); const [sheetVisible, setSheetVisible] = useState(false); const [weekOffset, setWeekOffset] = useState(0); const today = useMemo(() => new Date(), []); const todayStart = dayStart(today);
+  useFocusEffect(useCallback(() => { if (app.status === "ready") void dispatch(loadTasks()); }, [app.status, dispatch]));
+  useEffect(() => { if (app.status === "ready") void dispatch(loadTasks()); }, [app.status, dispatch, tab]);
+  const weekStart = useMemo(() => { const date = new Date(todayStart); const day = date.getDay() || 7; date.setDate(date.getDate() - day + 1 + weekOffset * 7); return date; }, [todayStart, weekOffset]);
+  const visibleTasks = tab === "home" ? tasks.filter((item) => item.eventDate === new Date(todayStart).toISOString().slice(0, 10)) : tasks.filter((item) => item.eventAt >= weekStart.getTime() && item.eventAt < weekStart.getTime() + 7 * 86400000);
+  const dateLabel = new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "long" }).format(today);
+  const milestone = nextDefaultMilestone(today); const holiday = nextHoliday(today);
+  const pendingMilestone = app.pendingMilestone;
+  const card = (task: typeof tasks[number]) => <TaskCard key={task.id} task={task} onPress={() => router.push(`/task/${task.id}` as never)} onComplete={() => void dispatch(editTask(task.id, { completed: true, completedAt: Date.now() }))} />;
+  return <SafeAreaView style={styles.safe}><View style={styles.header}><View><Text style={styles.eyebrow}>班主任个人工作台</Text><Text style={styles.headerTitle}>{tab === "home" ? "首页概览" : "周日历"}</Text></View><Pressable onPress={() => router.push("/search" as never)}><Text style={styles.all}>所有日程</Text></Pressable></View>{tab === "home" ? <ScrollView contentContainerStyle={styles.scroll}><View style={styles.greeting}><Text style={styles.greetingTitle}>{greeting(today.getHours())}</Text><Text style={styles.greetingSub}>{dateLabel} · 愿你的一天温暖而充实</Text></View><View style={styles.countdown}><Text style={styles.countdownText}>{milestone ? `距离${milestone.label}还有 ${milestone.days} 天` : "校历节点待配置"}</Text><Text style={styles.countdownSub}>{holiday ? `最近节日：${holiday.label}，还有 ${holiday.days} 天` : "节日数据待更新"}</Text></View><View style={styles.quote}><Text style={styles.quoteTitle}>今日寄语</Text><Text style={styles.quoteText}>{dailyQuote(today)}</Text></View><View style={styles.sectionHeader}><Text style={styles.sectionTitle}>今日待办</Text><Text style={styles.count}>{visibleTasks.filter((item) => !item.completed).length} 项未完成</Text></View>{visibleTasks.length ? visibleTasks.map(card) : <View style={styles.empty}><Text style={styles.emptyTitle}>今天还没有待办</Text><Text style={styles.emptySub}>点击右下角 + 添加一条日程</Text></View>}</ScrollView> : <ScrollView contentContainerStyle={styles.scroll}><View style={styles.weekNav}><Pressable onPress={() => setWeekOffset((value) => value - 1)}><Text style={styles.navButton}>‹ 上周</Text></Pressable><Text style={styles.weekTitle}>{weekStart.getMonth() + 1}月{weekStart.getDate()}日 - {new Date(weekStart.getTime() + 6 * 86400000).getMonth() + 1}月{new Date(weekStart.getTime() + 6 * 86400000).getDate()}日</Text><Pressable onPress={() => setWeekOffset((value) => value + 1)}><Text style={styles.navButton}>下周 ›</Text></Pressable></View>{visibleTasks.length ? visibleTasks.map(card) : <View style={styles.empty}><Text style={styles.emptyTitle}>本周暂无日程</Text></View>}</ScrollView>}<View style={styles.bottom}><Pressable onPress={() => setTab("home")}><Text style={[styles.tab, tab === "home" && styles.activeTab]}>⌂{"\n"}首页</Text></Pressable><Pressable onPress={() => setTab("calendar")}><Text style={[styles.tab, tab === "calendar" && styles.activeTab]}>▦{"\n"}日历</Text></Pressable></View><Pressable style={styles.fab} onPress={() => setSheetVisible(true)}><Text style={styles.fabText}>＋</Text></Pressable><AddTaskSheet visible={sheetVisible} onClose={() => setSheetVisible(false)} onSelect={(kind) => { setSheetVisible(false); router.push(`/task/new?kind=${kind}` as never); }} /><>{pendingMilestone && <SchoolMilestonePrompt milestone={pendingMilestone} onLater={() => dispatch({ type: "app/milestoneDismissed" })} onSave={async (date) => { await saveSchoolMilestone(pendingMilestone, date); dispatch({ type: "app/milestoneDismissed" }); await dispatch(loadTasks()); }} />}</></SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  safe: { flex: 1, backgroundColor: "#fffdf8" }, header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, eyebrow: { color: "#9aac9f", fontSize: 12, marginBottom: 3 }, headerTitle: { color: "#263c36", fontSize: 25, fontWeight: "700" }, all: { color: "#4aa488", fontSize: 14 }, scroll: { padding: 20, paddingBottom: 120 }, greeting: { padding: 22, borderRadius: 24, backgroundColor: "#dff3e9", marginBottom: 14 }, greetingTitle: { color: "#31594b", fontSize: 26, fontWeight: "700", marginBottom: 8 }, greetingSub: { color: "#628177", fontSize: 14 }, countdown: { padding: 16, borderRadius: 18, backgroundColor: "#fff1d8", marginBottom: 14 }, countdownText: { color: "#8c6b2e", fontSize: 16, fontWeight: "700" }, countdownSub: { color: "#a98a50", marginTop: 6, fontSize: 13 }, quote: { padding: 20, borderRadius: 22, backgroundColor: "#dff0f2", marginBottom: 24 }, quoteTitle: { color: "#4d7779", fontSize: 13, marginBottom: 8 }, quoteText: { color: "#315b5f", fontSize: 17, lineHeight: 26 }, sectionHeader: { flexDirection: "row", alignItems: "baseline", gap: 10, marginBottom: 12 }, sectionTitle: { color: "#263c36", fontSize: 21, fontWeight: "700" }, count: { color: "#91a39a", fontSize: 13 }, empty: { alignItems: "center", padding: 48, backgroundColor: "#f4f8f4", borderRadius: 20 }, emptyTitle: { color: "#60766c", fontSize: 17 }, emptySub: { color: "#9aac9f", marginTop: 8 }, bottom: { position: "absolute", bottom: 0, left: 0, right: 0, height: 78, backgroundColor: "rgba(255,253,248,.96)", borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#e0ebe5", flexDirection: "row", justifyContent: "space-around", paddingTop: 12 }, tab: { textAlign: "center", color: "#9aac9f", fontSize: 13, lineHeight: 23 }, activeTab: { color: "#45a487", fontWeight: "700" }, fab: { position: "absolute", right: 22, bottom: 92, width: 58, height: 58, borderRadius: 29, backgroundColor: "#58b79b", alignItems: "center", justifyContent: "center", shadowColor: "#58b79b", shadowOpacity: .3, shadowRadius: 9, elevation: 5 }, fabText: { color: "#fff", fontSize: 32, lineHeight: 34, fontWeight: "300" }, weekNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18, paddingVertical: 12 }, weekTitle: { color: "#40574f", fontWeight: "700" }, navButton: { color: "#4aa488" }
 });

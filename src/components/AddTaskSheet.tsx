@@ -1,0 +1,7 @@
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+
+export function AddTaskSheet({ visible, onClose, onSelect }: { visible: boolean; onClose: () => void; onSelect: (kind: "normal" | "leave") => void }) {
+  return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}><Pressable style={styles.backdrop} onPress={onClose}><View style={styles.sheet} onStartShouldSetResponder={() => true}><View style={styles.handle} /><Text style={styles.title}>添加记录</Text><Pressable style={styles.option} onPress={() => onSelect("normal")}><Text style={styles.icon}>✦</Text><Text style={styles.optionText}>添加普通日程</Text></Pressable><Pressable style={styles.option} onPress={() => onSelect("leave")}><Text style={styles.icon}>☁</Text><Text style={styles.optionText}>添加学生请假</Text></Pressable></View></Pressable></Modal>;
+}
+
+const styles = StyleSheet.create({ backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(35, 57, 51, .22)" }, sheet: { padding: 24, paddingBottom: 36, backgroundColor: "#fffdf8", borderTopLeftRadius: 28, borderTopRightRadius: 28 }, handle: { alignSelf: "center", width: 42, height: 5, borderRadius: 3, backgroundColor: "#cbd9d1", marginBottom: 20 }, title: { color: "#263c36", fontSize: 21, fontWeight: "700", marginBottom: 12 }, option: { flexDirection: "row", alignItems: "center", paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e5eee9" }, icon: { width: 35, color: "#58a991", fontSize: 22 }, optionText: { color: "#40574f", fontSize: 16 } });
