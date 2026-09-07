@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "big-fat-fish",
+    "name": "大肥鱼",
     "slug": "big-fat-fish",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.anonymous.big-fat-fish"
+      "bundleIdentifier": "com.anonymous.big-fat-fish",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "允许班主任工作台访问麦克风，用于录制日程语音。"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -35,7 +38,7 @@
         }
       ],
       "expo-sqlite",
-      "expo-audio",
+      ["expo-audio", { "microphonePermission": "允许班主任工作台访问麦克风，用于录制日程语音。" }],
       "expo-notifications"
     ],
     "experiments": {
