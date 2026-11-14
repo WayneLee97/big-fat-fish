@@ -9,9 +9,16 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.anonymous.big-fat-fish",
+      "bundleIdentifier": "com.waynelee97.big-fat-fish",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "允许班主任工作台访问麦克风，用于录制日程语音。"
+        "NSMicrophoneUsageDescription": "允许班主任工作台访问麦克风，用于录制日程语音。",
+        "NSLocalNetworkUsageDescription": "允许大肥鱼连接同一局域网内的教室电脑并发送通知。",
+        "NSBonjourServices": [
+          "_bigfatfish._tcp"
+        ],
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
       }
     },
     "android": {
@@ -38,8 +45,31 @@
         }
       ],
       "expo-sqlite",
-      ["expo-audio", { "microphonePermission": "允许班主任工作台访问麦克风，用于录制日程语音。" }],
-      "expo-notifications"
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "允许班主任工作台访问相机，用于拍摄日程照片和通知 OCR 识别。",
+          "photosPermission": "允许班主任工作台访问相册，用于添加日程照片和选择通知图片进行 OCR 识别。",
+          "microphonePermission": "允许班主任工作台访问麦克风，用于录制日程语音。"
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "允许班主任工作台访问麦克风，用于录制日程语音。"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "允许大肥鱼使用相机扫描配对二维码、拍摄日程照片和进行通知 OCR 识别。",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      "expo-notifications",
+      "expo-secure-store",
+      "./plugins/withClassroomNetwork"
     ],
     "experiments": {
       "typedRoutes": true,

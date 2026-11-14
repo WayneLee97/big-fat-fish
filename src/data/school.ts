@@ -1,0 +1,4 @@
+export interface SchoolClass { id: string; name: string; createdAt: number; updatedAt: number; version: number; studentCount?: number; }
+export interface Student { id: string; classId: string; studentNumber: string; name: string; createdAt: number; updatedAt: number; version: number; }
+export interface TimetableLesson { id: string; timetableId: string; weekday: number; period: number; subject: string; room: string | null; note: string | null; teachingClassId: string | null; adjustmentType: "temporary" | "long_term" | null; effectiveFrom: number | null; effectiveUntil: number | null; }
+export interface StudentRecord { id: string; classId: string; studentId: string | null; studentName: string; studentNumber: string; className: string; recordDate: string; content: string; images: string[]; recordings: string[]; createdAt: number; }

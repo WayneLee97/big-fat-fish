@@ -1,0 +1,15 @@
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import type { TimetableLesson } from "@/data/school";
+
+const days = ["周一", "周二", "周三", "周四", "周五"];
+const label = (period: number) => `${period <= 4 ? "上午" : "下午"}${period <= 4 ? period : period - 4}节`;
+
+export function WeeklyTimetable({ lessons, onPress }: { lessons: TimetableLesson[]; onPress: (weekday: number, period: number, lesson?: TimetableLesson) => void }) {
+  const bySlot = new Map(lessons.map((lesson) => [`${lesson.weekday}-${lesson.period}`, lesson]));
+  return <View style={styles.container}><Text style={styles.hint}>左右滑动查看周四、周五</Text><ScrollView horizontal nestedScrollEnabled directionalLockEnabled showsHorizontalScrollIndicator contentContainerStyle={styles.scroller}><View style={styles.table}>
+    <View style={styles.row}><View style={styles.periodHeader} /><>{days.map((day) => <Text key={day} style={styles.day}>{day}</Text>)}</></View>
+    {Array.from({ length: 8 }, (_, index) => index + 1).map((period) => <View key={period} style={[styles.row, period === 5 && styles.afternoon]}><Text style={styles.period}>{label(period)}</Text>{days.map((_, dayIndex) => { const weekday = dayIndex + 1; const lesson = bySlot.get(`${weekday}-${period}`); const temporary = lesson?.adjustmentType === "temporary"; return <Pressable key={weekday} style={[styles.cell, lesson && styles.filled, temporary && styles.temporary]} onPress={() => onPress(weekday, period, lesson)}><Text numberOfLines={2} style={lesson ? [styles.subject, temporary && styles.temporarySubject] : styles.empty}> {lesson?.subject ?? "+"}</Text>{temporary && <Text style={styles.badge}>临时</Text>}{lesson?.room && <Text numberOfLines={1} style={styles.room}>{lesson.room}</Text>}</Pressable>; })}</View>)}
+  </View></ScrollView></View>;
+}
+
+const styles = StyleSheet.create({ container: { marginHorizontal: -20 }, hint: { color: "#91a39a", fontSize: 12, textAlign: "right", paddingRight: 20, marginBottom: 8 }, scroller: { paddingHorizontal: 20, paddingBottom: 6 }, table: { minWidth: 620, borderWidth: StyleSheet.hairlineWidth, borderColor: "#dfeae4", borderRadius: 14, overflow: "hidden", backgroundColor: "#fff" }, row: { flexDirection: "row", minHeight: 64 }, afternoon: { borderTopWidth: 8, borderTopColor: "#fff6e6" }, periodHeader: { width: 72, backgroundColor: "#f3f8f5" }, day: { width: 108, textAlign: "center", paddingVertical: 12, backgroundColor: "#f3f8f5", color: "#536960", fontWeight: "700" }, period: { width: 72, paddingTop: 20, textAlign: "center", color: "#789087", fontSize: 12, backgroundColor: "#f9fbf9" }, cell: { width: 108, borderLeftWidth: StyleSheet.hairlineWidth, borderTopWidth: StyleSheet.hairlineWidth, borderColor: "#dfeae4", justifyContent: "center", alignItems: "center", padding: 7 }, filled: { backgroundColor: "#e7f5ed" }, temporary: { backgroundColor: "#ffe7e7" }, subject: { color: "#267b63", fontWeight: "700", textAlign: "center" }, temporarySubject: { color: "#a94f5b" }, badge: { color: "#c66b76", fontSize: 10, marginTop: 2 }, room: { color: "#789087", fontSize: 11, marginTop: 3 }, empty: { color: "#b6c8bf", fontSize: 22 } });

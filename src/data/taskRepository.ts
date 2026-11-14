@@ -67,7 +67,8 @@ export async function createTask(input: CreateTaskInput): Promise<TaskOccurrence
 
 export async function createRecurringTasks(input: CreateTaskInput, until: number) {
   const groupId = input.recurrenceGroupId ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  const timestamps = expandRecurrence({ preset: input.recurrenceRule === "FREQ=DAILY" ? "daily" : input.recurrenceRule === "FREQ=WEEKLY" ? "weekly" : input.recurrenceRule === "FREQ=MONTHLY;BYMONTHDAY=-1" ? "monthEnd" : "monthly", startAt: input.eventAt, until });
+  const preset = input.recurrenceRule === "FREQ=DAILY" ? "daily" : input.recurrenceRule === "FREQ=WEEKLY" || input.recurrenceRule?.startsWith("FREQ=WEEKLY;") ? "weekly" : input.recurrenceRule === "FREQ=MONTHLY;BYMONTHDAY=-1" ? "monthEnd" : "monthly";
+  const timestamps = expandRecurrence({ preset, rule: input.recurrenceRule, startAt: input.eventAt, until });
   const created: TaskOccurrence[] = [];
   for (const eventAt of timestamps) {
     const date = new Date(eventAt); const eventDate = date.toISOString().slice(0, 10);

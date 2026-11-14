@@ -5,13 +5,16 @@ import { cleanupOldOperationLogs } from "@/data/operationLog";
 import { ensureBuiltinTasks } from "@/data/builtinTasks";
 import { findMissingSchoolMilestone } from "@/services/calendar/schoolMilestone";
 import { reconcileNotifications } from "@/services/notifications/notificationCoordinator";
+import { ensureInitialSchoolData, refreshLessonReminders } from "@/data/schoolRepository";
 
 export const initializeApp = () => async (dispatch: (action: { type: string; payload?: unknown }) => void) => {
   dispatch({ type: "app/initializing" });
   try {
     await getDatabase();
     await ensureMediaDirectories();
+    await ensureInitialSchoolData();
     await ensureBuiltinTasks();
+    await refreshLessonReminders();
     await loadTasks()(dispatch);
     await cleanupOldOperationLogs();
     dispatch({ type: "app/milestonePrompt", payload: await findMissingSchoolMilestone() });
