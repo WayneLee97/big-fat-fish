@@ -1,0 +1,74 @@
+{
+  "name": "big-fat-fish-classroom-client",
+  "version": "0.2.1",
+  "private": true,
+  "description": "大肥鱼教室呼叫 Windows 客户端",
+  "author": "大肥鱼",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "verify:offline-tts": "node scripts/verify-offline-tts.js",
+    "pack:win": "electron-builder --win dir --x64 --publish never",
+    "build:win": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "^39.2.3",
+    "electron-builder": "^26.18.0"
+  },
+  "dependencies": {
+    "bonjour-service": "^1.4.4",
+    "qrcode": "^1.5.4",
+    "sherpa-onnx-node": "2.0.1",
+    "sherpa-onnx-win-x64": "2.0.1"
+  },
+  "build": {
+    "appId": "com.waynelee.bigfatfish.classroom",
+    "productName": "大肥鱼教室呼叫",
+    "asar": true,
+    "asarUnpack": [
+      "src/offline-tts-worker.js",
+      "src/wave-audio.js",
+      "node_modules/sherpa-onnx-node/**/*",
+      "node_modules/sherpa-onnx-win-x64/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/tts",
+        "to": "tts"
+      }
+    ],
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!node_modules/sherpa-onnx-darwin-*/**/*",
+      "!node_modules/sherpa-onnx-linux-*/**/*",
+      "!node_modules/sherpa-onnx-win-arm64/**/*",
+      "!node_modules/sherpa-onnx-win-ia32/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.svg",
+      "artifactName": "大肥鱼教室呼叫-${version}-安装程序.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "大肥鱼教室呼叫",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

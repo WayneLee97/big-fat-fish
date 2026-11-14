@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' data:" />
+    <title>大肥鱼教室呼叫</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main>
+      <header><div><span class="eyebrow">大肥鱼</span><h1>教室呼叫客户端</h1></div><span class="online">● 服务运行中</span></header>
+      <section id="notification" class="notification hidden"><button id="notification-close" class="notification-close" aria-label="关闭通知">关闭</button><span>新通知</span><p id="notification-content"></p></section>
+      <section class="grid">
+        <article><h2>本机连接信息</h2><div class="connection"><div><dl><dt>电脑</dt><dd id="device-name">—</dd><dt>班级</dt><dd id="class-name">—</dd><dt>访问地址</dt><dd id="addresses">—</dd><dt>六位配对码</dt><dd id="pairing-code" class="pairing-code">—</dd></dl><p class="hint">使用大肥鱼扫描二维码即可绑定。每次成功配对后，二维码和配对码都会更新。</p><div class="audio-settings"><label for="audio-output">扬声器测试输出设备</label><select id="audio-output"><option value="">系统默认设备</option></select></div><div class="actions"><button id="speaker-test" class="secondary">测试扬声器</button><button id="speech-test">测试离线语音</button><button id="diagnostics-test" class="secondary">运行系统自检</button></div><p id="test-result" class="hint"></p><div id="diagnostics" class="diagnostics hidden"></div></div><img id="pairing-qr" class="pairing-qr" alt="教室电脑配对二维码" /></div></article>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
