@@ -1,6 +1,7 @@
-import { Stack } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Stack, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { listClasses } from '@/data/schoolRepository';
 import { getDatabase } from '@/data/database';
 import { analyzeDocument, clearDeepSeekApiKey, deleteLocalImage, loadDeepSeekApiKey, MAX_IMAGE_COUNT, pickDocument, pickImages, saveDeepSeekApiKey, takePhoto, type ImportedDocument, type ImportedImage } from '@/services/ai/client';
 import { type Suggestion } from '@/services/ai/contract';
@@ -14,7 +15,8 @@ export default function AiImport() {
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState('deepseek-flash');
   const [rememberKey, setRememberKey] = useState(true);
-  const [profile, setProfile] = useState('');
+  const [classNames, setClassNames] = useState<string[]>([]);
+  const [classesLoaded, setClassesLoaded] = useState(false);
   const [text, setText] = useState('');
   const [file, setFile] = useState<ImportedDocument | null>(null);
   const [images, setImages] = useState<ImportedImage[]>([]);
@@ -38,7 +40,6 @@ export default function AiImport() {
         if (storedApiKey) setApiKey(storedApiKey);
         if (row) {
           const saved = JSON.parse(row.value);
-          setProfile(saved.profile ?? '');
           setModel(typeof saved.model === 'string' && saved.model.startsWith('deepseek-') ? saved.model : 'deepseek-flash');
           // Drafts may contain unfinished user edits; validate dates only on confirmation.
           const drafts: Suggestion[] = Array.isArray(saved.items) ? saved.items.slice(0, 50).filter((item: Suggestion) => item && ['title', 'evidence', 'relevance', 'uncertainty'].every(key => typeof item[key as keyof Suggestion] === 'string') && (item.date === null || typeof item.date === 'string') && (item.time === null || typeof item.time === 'string')) : [];
@@ -51,12 +52,20 @@ export default function AiImport() {
   }, []);
   useEffect(() => {
     if (!ready) return;
-    const value = JSON.stringify({ model, profile, summary, source, items });
+    const value = JSON.stringify({ model, summary, source, items });
     persistQueue.current = persistQueue.current.catch(() => {}).then(async () => {
       const db = await getDatabase();
       await db.runAsync('INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)', 'ai-import', value, Date.now());
     }).catch(() => { setMessage('草稿未保存，退出前请完成确认。'); });
-  }, [ready, model, profile, summary, source, items]);
+  }, [ready, model, summary, source, items]);
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    setClassesLoaded(false);
+    void listClasses().then(classes => {
+      if (active) { setClassNames(classes.map(item => item.name)); setClassesLoaded(true); }
+    }).catch(() => { if (active) setMessage('班级信息暂未读取成功，解析时会重新读取。'); });
+    return () => { active = false; };
+  }, []));
   async function run(label: string, action: () => Promise<void>) {
     if (lock.current) return;
     lock.current = true; setBusy(label); setMessage('');
@@ -96,8 +105,7 @@ export default function AiImport() {
     <Stack.Screen options={{ title: 'AI 文档日程助手' }} />
     <Text style={s.title}>把通知变成待办日程</Text>
     <Text style={s.hint}>拍摄通知、从相册选图、导入文件或粘贴文字，AI 会提取与你相关的事项。只有你确认的内容才会加入本 APP 日程。</Text>
-    <Text style={s.label}>我的身份与职责</Text>
-    <TextInput editable={!disabled} style={s.input} multiline maxLength={2000} value={profile} onChangeText={value => { setProfile(value); setConsent(false); }} placeholder="例如：我是李老师，三年级二班班主任，负责本班家长通知与材料提交。" />
+    <View style={s.card}><Text style={s.label}>自动筛选范围</Text><Text style={s.body}>{classesLoaded ? classNames.length ? `我的班级：${classNames.join('、')}` : '尚未添加班级，暂不筛选特定班级事项。' : '解析时自动读取已添加的班级。'}</Text><Text style={s.hint}>同时提取数学教学活动，以及所有人员或全体教师参加的学校公共活动。无需填写提示词，解析时使用最新班级信息。</Text></View>
     <Text style={s.label}>DeepSeek 直连设置</Text>
     <Text style={s.warning}>仅建议个人自用。API Key 会由本 APP 直接发送给 DeepSeek，不经过自建服务器。</Text>
     <TextInput editable={!disabled} style={s.input} autoCapitalize="none" autoCorrect={false} secureTextEntry value={apiKey} onChangeText={value => { setApiKey(value); setConsent(false); }} placeholder="DeepSeek API Key" />
@@ -126,11 +134,11 @@ export default function AiImport() {
       </View>)}
     </ScrollView>}
     <TextInput editable={!disabled} style={[s.input, s.textarea]} multiline maxLength={30000} value={text} onChangeText={value => { setText(value); setConsent(false); }} placeholder="也可以在这里粘贴其他 APP 中的通知…" />
-    <View style={s.row}><Switch disabled={disabled} value={consent} onValueChange={setConsent} /><Text style={s.consent}>同意将所选照片、文档、通知和身份信息直接发送至 DeepSeek 分析。分析完成后会请求删除远程临时文件。</Text></View>
-    <Pressable accessibilityRole="button" disabled={disabled || !consent || !apiKey.trim() || !model.trim() || !profile.trim() || (!file && !images.length && !text.trim())} style={[s.button, (disabled || !consent || !apiKey.trim() || !model.trim() || !profile.trim() || (!file && !images.length && !text.trim())) && s.dim]} onPress={() => void run('AI 正在分析…', async () => {
+    <View style={s.row}><Switch disabled={disabled} value={consent} onValueChange={setConsent} /><Text style={s.consent}>同意将所选照片、文档、通知和班级名称直接发送至 DeepSeek 分析。分析完成后会请求删除远程临时文件。</Text></View>
+    <Pressable accessibilityRole="button" disabled={disabled || !consent || !apiKey.trim() || !model.trim() || (!file && !images.length && !text.trim())} style={[s.button, (disabled || !consent || !apiKey.trim() || !model.trim() || (!file && !images.length && !text.trim())) && s.dim]} onPress={() => void run('AI 正在分析…', async () => {
       if (rememberKey) await saveDeepSeekApiKey(apiKey.trim());
       else await clearDeepSeekApiKey();
-      const result = await analyzeDocument({ apiKey, model, profile, text, file, images });
+      const result = await analyzeDocument({ apiKey, model, text, file, images });
       setSummary(result.summary); setSource(describeSource());
       setItems(result.items.map(item => ({ ...item, selected: false })));
       if (!result.items.length) setMessage('未发现与你相关的可安排事项。');
