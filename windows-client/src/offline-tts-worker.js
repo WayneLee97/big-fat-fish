@@ -41,7 +41,8 @@ parentPort.on("message", ({ id, text }) => {
   try {
     const startedAt = Date.now();
     const generationConfig = new sherpa.GenerationConfig({ sid: 0, speed: 1, silenceScale: 0.2 });
-    const generated = engine.generate({ text, generationConfig });
+    // Electron rejects external buffers returned by native addons.
+    const generated = engine.generate({ text, generationConfig, enableExternalBuffer: false });
     const synthesisMs = Date.now() - startedAt;
     const wave = encodeWavePcm16(generated.samples, generated.sampleRate);
     const stats = analyzeWavePcm16(wave);
